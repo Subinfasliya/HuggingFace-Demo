@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { InferenceClient } from "@huggingface/inference";
 
-
 dotenv.config();
 
 const app = express();
@@ -11,10 +10,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
 const client = new InferenceClient(process.env.HF_ACCESS_TOKEN);
-
-
 
 app.post("/api/sentiment", async (req, res) => {
   try {
@@ -30,11 +26,19 @@ app.post("/api/sentiment", async (req, res) => {
     let result = await client.textClassification({
       model: "cardiffnlp/twitter-roberta-base-sentiment-latest",
       inputs: text,
-      provider: "auto",
-    }); 
+      provider: "hf-inference",
+    });
+
+    let dominant_sentiment = null;
+
+    if (Array.isArray(result) && result.length > 0) {
+      dominant_sentiment = result[0].label;
+    }
 
     return res.status(200).json({
-      result,
+      success: true,
+      dominant_sentiment,
+      raw_scores: result,
     });
   } catch (error) {
     return res.status(500).json({
